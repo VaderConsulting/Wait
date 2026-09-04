@@ -1,0 +1,103 @@
+When creating out of process applications (ie. using DOS applications or Shelling VB apps), 
+it is often extremely useful to be able to return a parameter from the other application, 
+eg. returning error numbers. The following code creates two projects, one called 
+"Return Param.exe" and the other called "Demo.exe". The Demo program will shell 
+the Return Param application and when the user clicks close a numeric parameter 
+from a textbox will be returned to the Demo application.
+
+
+Code for Demo.exe:
+------------------
+------------------
+'Requires a single standard module
+
+Option Explicit
+
+Private Declare Function GetExitCodeProcess Lib "kernel32" (ByVal hProcess As Long, lpExitCode As Long) As Long
+Private Declare Function WaitForSingleObject Lib "kernel32" (ByVal hHandle As Long, ByVal dwMilliseconds As Long) As Long
+Private Declare Function OpenProcess Lib "kernel32" (ByVal dwDesiredAccess As Long, ByVal bInheritHandle As Long, ByVal dwProcessId As Long) As Long
+Private Declare Function CloseHandle Lib "kernel32" (ByVal hObject As Long) As Long
+Private Declare Function FormatMessage Lib "kernel32" Alias "FormatMessageA" (ByVal dwFlags As Long, lpSource As Any, ByVal dwMessageId As Long, ByVal dwLanguageId As Long, ByVal lpBuffer As String, ByVal nSize As Long, Arguments As Long) As Long
+
+'This
+Sub Main()
+    Dim lTaskID As Long, lPID As Long, lExitCode As Long, sAppDir As String
+    Const INFINITE = &HFFFFFFFF       '  Infinite timeout
+    Const SYNCHRONIZE = &H100000
+    Const STILL_ACTIVE = 0
+    Const STANDARD_RIGHTS_REQUIRED = &HF0000
+    Const PROCESS_ALL_ACCESS = (STANDARD_RIGHTS_REQUIRED Or SYNCHRONIZE Or &HFFF)
+    
+    sAppDir = App.Path
+    If Right$(sAppDir, 1) <> "\" Then
+        sAppDir = sAppDir & "\"
+    End If
+    MsgBox "This application will now start another application (out of process)." & vbNewLine & _
+    "Please enter a return value and click Close" & vbNewLine & _
+    "This display the value entered in the other application...", vbInformation
+    'Shell Application
+    lTaskID = Shell(sAppDir & "Return Param.exe", vbNormalFocus)
+    'Get process handle
+    lPID = OpenProcess(PROCESS_ALL_ACCESS, True, lTaskID)
+    If lPID Then
+        'Wait for process to finish
+        'Note, you must now enter a value in the form and click close.
+        Call WaitForSingleObject(lPID, INFINITE)
+        'Get Exit Process
+        If GetExitCodeProcess(lPID, lExitCode) Then
+            'Received value
+            MsgBox "Successfully returned " & lExitCode, vbInformation
+        Else
+            MsgBox "Failed: " & DLLErrorText(Err.LastDllError), vbCritical
+        End If
+    Else
+        MsgBox "Failed: " & DLLErrorText(Err.LastDllError), vbCritical
+    End If
+    lTaskID = CloseHandle(lPID)
+End Sub
+
+'Purpose     :  Return the error message associated with LastDLLError
+'Inputs      :  lLastDLLError               The error number of the last DLL error (from Err.LastDllError)
+'Outputs     :  Returns the error message associated with the DLL error number
+
+
+Public Function DLLErrorText(ByVal lLastDLLError As Long) As String
+    Dim sBuff As String * 256
+    Dim lCount As Long
+    Const FORMAT_MESSAGE_ALLOCATE_BUFFER = &H100, FORMAT_MESSAGE_ARGUMENT_ARRAY = &H2000
+    Const FORMAT_MESSAGE_FROM_HMODULE = &H800, FORMAT_MESSAGE_FROM_STRING = &H400
+    Const FORMAT_MESSAGE_FROM_SYSTEM = &H1000, FORMAT_MESSAGE_IGNORE_INSERTS = &H200
+    Const FORMAT_MESSAGE_MAX_WIDTH_MASK = &HFF
+    
+    lCount = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM Or FORMAT_MESSAGE_IGNORE_INSERTS, 0, lLastDLLError, 0&, sBuff, Len(sBuff), ByVal 0)
+    If lCount Then
+        DLLErrorText = Left$(sBuff, lCount - 2)    'Remove line feeds
+    End If
+    
+End Function
+
+
+Code for Return Param.exe:
+--------------------------
+--------------------------
+
+'Requires a form, which contains:
+'1. A command button called cmdClose
+'2. A text box called txtRetVal 
+
+Option Explicit
+Private Declare Sub ExitProcess Lib "kernel32" (ByVal uExitCode As Long)
+
+Private Sub cmdClose_Click()
+    'Must unload the application before returning the ExitCode
+    Unload Me
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+    Dim lExitCode as Long
+
+    On Error Resume Next
+    lExitCode = CLng(Me.txtRetVal)
+    'Return exit code
+    ExitProcess lExitCode
+End Sub
