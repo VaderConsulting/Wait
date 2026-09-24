@@ -21,7 +21,7 @@ Open the `.vbp` in Visual Basic 6.0 IDE:
 
 ## Attribution and provenance
 
-Working copy from Dave Robinson's OneDrive Historical Dev folder `VB/Wait`.
+Working copy from my Historical Dev folder `VB/Wait`.
 Company names in `.vbp` files: www.TheScarms.com.
 Third-party attribution: Dave Scarmozzino / TheScarms.com. See `THIRD_PARTY_NOTICES.md`.
 
