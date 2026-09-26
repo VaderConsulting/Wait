@@ -2,7 +2,7 @@
 
 Dave Scarmozzino / TheScarms.com sample (`Wait.exe` / `WaitforApp`) that shells an application and blocks with `WaitForSingleObject` until it terminates (notes on DOS apps and exit codes in `Get DOS Return Code.txt`). Open `Wait.vbp` in the VB6 IDE.
 
-**Source last updated:** 2026-08-27 · **Language:** VB6 · **Target:** VB6 Win32 · **Output:** WinForms exe
+**Source last updated:** 1999-07-01 · **Language:** VB6 · **Target:** VB6 Win32 · **Output:** WinForms exe
 
 ## Solution structure
 
